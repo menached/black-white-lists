@@ -5,7 +5,7 @@ $whitelistEntries = [];
 $blacklistEntries = [];
 
 // Define the expected access token
-$expectedToken = '';
+$expectedToken = 'e99a18c428cb38d5f260853678922e03';
 
 // Check if the access token is present and correct
 if (!isset($_GET['access_token']) || $_GET['access_token'] !== $expectedToken) {
