@@ -1,16 +1,18 @@
 <?php
-require 'vendor/autoload.php';
-
-use Dotenv\Dotenv;
-
-$dotenv = Dotenv::createImmutable(__DIR__);
-$dotenv->load();
-
 $file = '/etc/spamassassin/local.cf';
 $backupFile = $file . '.bak';
 $whitelistEntries = [];
 $blacklistEntries = [];
-$password = $_ENV['PASSWORD']; // Load password from .env file
+
+
+// Define the expected access token
+$expectedToken = '';
+
+// Check if the access token is present and correct
+if (!isset($_GET['access_token']) || $_GET['access_token'] !== $expectedToken) {
+    die("Access denied: This page is restricted.");
+}
+
 
 // Read current whitelist and blacklist entries
 $content = file_get_contents($file);
@@ -19,12 +21,12 @@ $whitelistEntries = $whitelistMatches[1];
 preg_match_all('/^blacklist_from\s+([^\s]+)$/m', $content, $blacklistMatches);
 $blacklistEntries = $blacklistMatches[1];
 
-// Check password for deletion request
-if (isset($_GET['delete']) && isset($_GET['type']) && in_array($_GET['type'], ['whitelist', 'blacklist']) && isset($_GET['password'])) {
+// Handle deletion request
+if (isset($_GET['delete']) && isset($_GET['type']) && in_array($_GET['type'], ['whitelist', 'blacklist'])) {
     $emailToDelete = filter_var($_GET['delete'], FILTER_VALIDATE_EMAIL);
     $listType = ($_GET['type'] === 'blacklist') ? 'blacklist_from' : 'whitelist_from';
 
-    if ($_GET['password'] === $password && $emailToDelete) {
+    if ($emailToDelete) {
         // Backup the config file before modifying
         copy($file, $backupFile);
 
@@ -38,19 +40,17 @@ if (isset($_GET['delete']) && isset($_GET['type']) && in_array($_GET['type'], ['
         // Redirect to the main page (mailadmin.php)
         header("Location: mailadmin.php");
         exit;
-    } else {
-        echo "<p style='color: red;'>Invalid password for deletion.</p>";
     }
 }
 
-// Check password for adding new whitelist/blacklist item
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['email']) && isset($_POST['password'])) {
+// Handle new whitelist/blacklist addition
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['email'])) {
     $email = filter_var(trim($_POST['email']), FILTER_VALIDATE_EMAIL);
     $listType = ($_POST['list_type'] === 'blacklist') ? 'blacklist_from' : 'whitelist_from';
 
-    if ($_POST['password'] === $password && $email) {
-        // Check for duplicates before adding
-        $isDuplicate = in_array($email, $whitelistEntries) || in_array($blacklistEntries);
+    // Check for duplicates before adding
+    if ($email) {
+        $isDuplicate = in_array($email, $whitelistEntries) || in_array($email, $blacklistEntries);
 
         if (!$isDuplicate) {
             $entry = "$listType $email" . PHP_EOL;
@@ -85,10 +85,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['email']) && isset($_P
         } else {
             echo "<p style='color: red;'>Entry already exists in the list.</p>";
         }
-    } else {
-        echo "<p style='color: red;'>Invalid password for addition.</p>";
     }
 }
+
 ?>
 
 <!DOCTYPE html>
@@ -120,7 +119,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['email']) && isset($_P
             margin-bottom: 8px;
             color: #555;
         }
-        input[type="email"], input[type="text"], input[type="password"], select {
+        input[type="email"], input[type="text"], select {
             width: 100%;
             padding: 10px;
             margin-bottom: 10px;
@@ -180,9 +179,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['email']) && isset($_P
         <label for="email">Email or Domain:</label>
         <input type="text" id="email" name="email" placeholder="e.g., *@example.com" required>
 
-        <label for="password">Password:</label>
-        <input type="password" id="password" name="password" required>
-
         <button type="submit">Add to List</button>
     </form>
 
@@ -193,7 +189,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['email']) && isset($_P
             <ul>
                 <?php foreach ($whitelistEntries as $entry): ?>
                     <li><?php echo htmlspecialchars($entry); ?> 
-                        <a href="?delete=<?php echo urlencode($entry); ?>&type=whitelist&password=abc123" class="delete-btn" onclick="return confirm('Are you sure you want to delete this whitelist entry?');">x</a>
+                        <a href="?delete=<?php echo urlencode($entry); ?>&type=whitelist" class="delete-btn" onclick="return confirm('Are you sure you want to delete this whitelist entry?');">x</a>
                     </li>
                 <?php endforeach; ?>
             </ul>
@@ -209,7 +205,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['email']) && isset($_P
             <ul>
                 <?php foreach ($blacklistEntries as $entry): ?>
                     <li><?php echo htmlspecialchars($entry); ?> 
-                        <a href="?delete=<?php echo urlencode($entry); ?>&type=blacklist&password=abc123" class="delete-btn" onclick="return confirm('Are you sure you want to delete this blacklist entry?');">x</a>
+                        <a href="?delete=<?php echo urlencode($entry); ?>&type=blacklist" class="delete-btn" onclick="return confirm('Are you sure you want to delete this blacklist entry?');">x</a>
                     </li>
                 <?php endforeach; ?>
             </ul>
