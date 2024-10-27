@@ -211,6 +211,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['email'])) {
             <p>No blacklist entries found.</p>
         <?php endif; ?>
     </div>
+<div style=text-align:center;><a href="https://github.com/menached/black-white-lists" target="_PARENT">GitHub</a></div>
 </body>
 </html>
 
