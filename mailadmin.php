@@ -38,32 +38,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['email'])) {
     $email = filter_var(trim($_POST['email']), FILTER_VALIDATE_EMAIL);
     $listType = ($_POST['list_type'] === 'blacklist') ? 'blacklist_from' : 'whitelist_from';
 
+    // Check for duplicates before adding
     if ($email) {
-        $entry = "$listType $email" . PHP_EOL;
+        $isDuplicate = in_array($email, $whitelistEntries) || in_array($email, $blacklistEntries);
 
-        // Backup the config file before modifying
-        copy($file, $backupFile);
+        if (!$isDuplicate) {
+            $entry = "$listType $email" . PHP_EOL;
 
-        // Determine the insertion point based on the list type
-        if ($listType === 'whitelist_from') {
-            $lastPos = strrpos($content, 'whitelist_from');
-            $insertionPoint = ($lastPos !== false) ? strpos($content, "\n", $lastPos) + 1 : 0;
-            $content = substr_replace($content, $entry, $insertionPoint, 0);
-        } elseif ($listType === 'blacklist_from') {
-            $lastPos = strrpos($content, 'blacklist_from');
-            if ($lastPos !== false) {
-                $insertionPoint = strpos($content, "\n", $lastPos) + 1;
+            // Backup the config file before modifying
+            copy($file, $backupFile);
+
+            // Determine the insertion point based on the list type
+            if ($listType === 'whitelist_from') {
+                $lastPos = strrpos($content, 'whitelist_from');
+                $insertionPoint = ($lastPos !== false) ? strpos($content, "\n", $lastPos) + 1 : 0;
                 $content = substr_replace($content, $entry, $insertionPoint, 0);
-            } else {
-                $whitelistEndPos = strrpos($content, 'whitelist_from');
-                $insertionPoint = ($whitelistEndPos !== false) ? strpos($content, "\n", $whitelistEndPos) + 1 : 0;
-                $content = substr_replace($content, $entry, $insertionPoint, 0);
+            } elseif ($listType === 'blacklist_from') {
+                $lastPos = strrpos($content, 'blacklist_from');
+                if ($lastPos !== false) {
+                    $insertionPoint = strpos($content, "\n", $lastPos) + 1;
+                    $content = substr_replace($content, $entry, $insertionPoint, 0);
+                } else {
+                    $whitelistEndPos = strrpos($content, 'whitelist_from');
+                    $insertionPoint = ($whitelistEndPos !== false) ? strpos($content, "\n", $whitelistEndPos) + 1 : 0;
+                    $content = substr_replace($content, $entry, $insertionPoint, 0);
+                }
             }
-        }
 
-        // Save changes and restart SpamAssassin
-        file_put_contents($file, $content);
-        exec('sudo systemctl restart spamassassin', $output, $returnVar);
+            // Save changes and restart SpamAssassin
+            file_put_contents($file, $content);
+            exec('sudo systemctl restart spamassassin', $output, $returnVar);
+
+            // Redirect to refresh the list and avoid form resubmission
+            header("Location: mailadmin.php");
+            exit;
+        } else {
+            echo "<p style='color: red;'>Entry already exists in the list.</p>";
+        }
     }
 }
 
@@ -74,7 +85,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['email'])) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manage Whitelist and Blacklist</title>
+    <title>Manage SpamAssassin Whitelist and Blacklist</title>
     <style>
         body {
             font-family: Arial, sans-serif;
