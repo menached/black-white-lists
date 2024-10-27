@@ -1,0 +1,15 @@
+# Ignore the .env file for security
+.env
+
+# Node and PHP dependencies
+node_modules/
+vendor/
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# Log and temporary files
+*.log
+*.tmp
+
