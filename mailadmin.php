@@ -4,7 +4,6 @@ $backupFile = $file . '.bak';
 $whitelistEntries = [];
 $blacklistEntries = [];
 
-
 // Define the expected access token
 $expectedToken = '';
 
@@ -12,7 +11,6 @@ $expectedToken = '';
 if (!isset($_GET['access_token']) || $_GET['access_token'] !== $expectedToken) {
     die("Access denied: This page is restricted.");
 }
-
 
 // Read current whitelist and blacklist entries
 $content = file_get_contents($file);
@@ -37,8 +35,8 @@ if (isset($_GET['delete']) && isset($_GET['type']) && in_array($_GET['type'], ['
         // Restart SpamAssassin
         exec('sudo systemctl restart spamassassin', $output, $returnVar);
 
-        // Redirect to the main page (mailadmin.php)
-        header("Location: mailadmin.php");
+        // Redirect to the main page with the access token
+        header("Location: mailadmin.php?access_token=" . urlencode($expectedToken));
         exit;
     }
 }
@@ -79,8 +77,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['email'])) {
             file_put_contents($file, $content);
             exec('sudo systemctl restart spamassassin', $output, $returnVar);
 
-            // Redirect to refresh the list and avoid form resubmission
-            header("Location: mailadmin.php");
+            // Redirect to refresh the list and avoid form resubmission with the access token
+            header("Location: mailadmin.php?access_token=" . urlencode($expectedToken));
             exit;
         } else {
             echo "<p style='color: red;'>Entry already exists in the list.</p>";
@@ -172,8 +170,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['email'])) {
         </p>
         <label for="list_type">List Type:</label>
         <select id="list_type" name="list_type" required>
-            <option value="whitelist">Whitelist</option>
             <option value="blacklist">Blacklist</option>
+            <option value="whitelist">Whitelist</option>
         </select>
 
         <label for="email">Email or Domain:</label>
@@ -189,7 +187,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['email'])) {
             <ul>
                 <?php foreach ($whitelistEntries as $entry): ?>
                     <li><?php echo htmlspecialchars($entry); ?> 
-                        <a href="?delete=<?php echo urlencode($entry); ?>&type=whitelist" class="delete-btn" onclick="return confirm('Are you sure you want to delete this whitelist entry?');">x</a>
+                        <a href="?delete=<?php echo urlencode($entry); ?>&type=whitelist&access_token=<?php echo urlencode($expectedToken); ?>" class="delete-btn" onclick="return confirm('Are you sure you want to delete this whitelist entry?');">x</a>
                     </li>
                 <?php endforeach; ?>
             </ul>
@@ -205,7 +203,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['email'])) {
             <ul>
                 <?php foreach ($blacklistEntries as $entry): ?>
                     <li><?php echo htmlspecialchars($entry); ?> 
-                        <a href="?delete=<?php echo urlencode($entry); ?>&type=blacklist" class="delete-btn" onclick="return confirm('Are you sure you want to delete this blacklist entry?');">x</a>
+                        <a href="?delete=<?php echo urlencode($entry); ?>&type=blacklist&access_token=<?php echo urlencode($expectedToken); ?>" class="delete-btn" onclick="return confirm('Are you sure you want to delete this blacklist entry?');">x</a>
                     </li>
                 <?php endforeach; ?>
             </ul>
