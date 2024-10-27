@@ -85,7 +85,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['email'])) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manage SpamAssassin Whitelist and Blacklist</title>
+    <title>Whitelist - Blacklist Manager</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -146,7 +146,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['email'])) {
     </style>
 </head>
 <body>
-    <h1>Manage SpamAssassin Whitelist and Blacklist</h1>
+    <h1>Whitelist / Blacklist Manager</h1>
     
     <!-- Form for adding entries -->
     <form method="POST">
