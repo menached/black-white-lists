@@ -7,4 +7,6 @@ www-data ALL=(ALL) NOPASSWD: /bin/systemctl restart spamassassin
 
 
 add .env to root dir with
-PASSWORD=YOURPASS
+add an access token to make it less visible
+
+URL?access_token=yourtoken
